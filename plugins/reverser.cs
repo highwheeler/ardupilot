@@ -27,7 +27,7 @@ namespace Shortcuts
 
         public override string Version
         {
-            get { return "0.10"; }
+            get { return "0.11"; }
         }
 
         public override string Author
@@ -43,9 +43,15 @@ namespace Shortcuts
         public override bool Loaded()
         {
             but = new ToolStripMenuItem("Reverser");
-            but.Click += but_Click;
+            ToolStripMenuItem but2 = new ToolStripMenuItem("Add Reversing commands");
+            but2.Click += add_Click;
+            but.DropDownItems.Add(but2);
+            ToolStripMenuItem but3 = new ToolStripMenuItem("Remove Reversing commands");
+            but3.Click += remove_Click;
+            but.DropDownItems.Add(but3);
             ToolStripItemCollection col = Host.FPMenuMap.Items;
             col.Insert(0, but);
+
             commands = Host.MainForm.FlightPlanner.Controls.Find("Commands", true).FirstOrDefault() as MissionPlanner.Controls.MyDataGridView;
             return true;
         }
@@ -60,13 +66,15 @@ namespace Shortcuts
             return true;
         }
 
-        void but_Click(object sender, EventArgs e)
+        void add_Click(object sender, EventArgs e)
         {
             DataGridViewRow lastWpt2 = null;
             DataGridViewRow lastWpt1 = null;
 
             bool lastDir = true;
             int num = 0;
+            // remove existing entries first
+            remove_Click(sender,e);
             // insert a do_set_reverse as first command
             DataGridViewRow startCmd = new DataGridViewRow();
             startCmd.CreateCells(commands);
@@ -77,14 +85,6 @@ namespace Shortcuts
             for (int i = 1; i < commands.Rows.Count; i++)
             {
                 DataGridViewRow row = commands.Rows[i];
-                // remove existing reversing entries
-                if (row.Cells[0].Value.ToString() == MAVLink.MAV_CMD.DO_SET_REVERSE.ToString())
-                {
-                    commands.Rows.Remove(commands.Rows[i]);
-                    i--;
-                    continue;
-                }
-
                 // if this is a waypoint
                 if (row.Cells[0].Value.ToString() == MAVLink.MAV_CMD.WAYPOINT.ToString())
                 {
@@ -134,5 +134,22 @@ namespace Shortcuts
             // redraw the map
             Host.MainForm.FlightPlanner.writeKML();
         }
-    }
+   
+        void remove_Click(object sender, EventArgs e)
+        {
+             // iterate through the waypoints
+            for (int i = 0; i < commands.Rows.Count; i++)
+            {
+                DataGridViewRow row = commands.Rows[i];
+                // remove reversing entries
+                if (row.Cells[0].Value.ToString() == MAVLink.MAV_CMD.DO_SET_REVERSE.ToString())
+                {
+                    commands.Rows.Remove(commands.Rows[i]);
+                    i--;
+                }
+            }
+            // redraw the map
+            Host.MainForm.FlightPlanner.writeKML();
+        }
+    }    
 }
